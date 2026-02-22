@@ -93,7 +93,7 @@ export default function Home() {
               <span className="text-red-500 font-mono text-xs font-bold tracking-[0.3em] uppercase">Race Analysis</span>
             </div>
             <h1 className="text-5xl font-black italic tracking-tighter text-white">
-              TELEMETRY <span className="text-red-600">HUB</span>
+              DMT COMPANION <span className="text-red-600"> APP</span>
             </h1>
           </div>
 
