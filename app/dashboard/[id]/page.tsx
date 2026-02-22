@@ -1,152 +1,177 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { supabase } from '@/lib/supabase'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-export default function DashboardSesion() {
-  const { id } = useParams()
-  const [vueltas, setVueltas] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const formatLaptime = (seconds: number) => {
+// --- 1. LAS FUNCIONES DE UTILIDAD (Fuera del componente) ---
+const formatLaptime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return "0:00.000";
-  
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   const millis = Math.round((seconds % 1) * 1000);
-
-  // PadStart asegura que siempre tengamos 2 dígitos en segundos y 3 en milésimos
   return `${mins}:${secs.toString().padStart(2, '0')}.${millis.toString().padStart(3, '0')}`;
 };
 
+const colores = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+export default function DashboardSesion() {
+  const { id } = useParams();
+  
+  // --- 2. LOS ESTADOS (States) ---
+  const [vueltas, setVueltas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pilotosVisibles, setPilotosVisibles] = useState<string[]>([]); // Filtro de pilotos
+
+  // --- 3. CARGA DE DATOS (useEffect) ---
   useEffect(() => {
     const fetchData = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('vueltas')
         .select('*')
         .eq('sesion_id', id)
-        .order('numero_vuelta', { ascending: true })
+        .order('numero_vuelta', { ascending: true });
 
-      if (data) setVueltas(data)
-      setLoading(false)
-    }
-    fetchData()
-  }, [id])
+      if (data) {
+        setVueltas(data);
+        // Al cargar, activamos todos los pilotos por defecto
+        const unicos = Array.from(new Set(data.map((v: any) => v.piloto_nombre)));
+        setPilotosVisibles(unicos);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [id]);
 
-  // 1. Agrupar datos para el gráfico
-    const chartData = Array.from(new Set(vueltas.map(v => v.numero_vuelta)))
+  // --- 4. LÓGICA DE PROCESAMIENTO (Antes del return) ---
+  const pilotosUnicos = Array.from(new Set(vueltas.map(v => v.piloto_nombre)));
+
+  // Preparamos los datos para el gráfico de Recharts
+  const chartData = Array.from(new Set(vueltas.map(v => v.numero_vuelta)))
     .map(numVuelta => {
-        const dataPunto: any = { name: `V${numVuelta}` };
-        vueltas.filter(v => v.numero_vuelta === numVuelta).forEach(v => {
+      const dataPunto: any = { name: `V${numVuelta}` };
+      vueltas.filter(v => v.numero_vuelta === numVuelta).forEach(v => {
         dataPunto[v.piloto_nombre] = v.laptime;
-        });
-        return dataPunto;
+      });
+      return dataPunto;
     });
 
-    // 2. Obtener lista única de pilotos para generar las líneas del gráfico
-    const pilotosUnicos = Array.from(new Set(vueltas.map(v => v.piloto_nombre)));
-    const colores = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+  const togglePiloto = (nombre: string) => {
+    setPilotosVisibles(prev => 
+      prev.includes(nombre) ? prev.filter(p => p !== nombre) : [...prev, nombre]
+    );
+  };
 
-  if (loading) return <p className="p-10 text-center">Analizando telemetría...</p>
+  if (loading) return <p className="p-10 text-center">Analizando telemetría...</p>;
 
- return (
-  <div className="p-8 bg-slate-900 min-h-screen text-slate-100">
-    <h1 className="text-3xl font-bold mb-8 border-b border-slate-700 pb-4">
-      Análisis de Telemetría <span className="text-red-500 text-sm font-mono">ID: {id}</span>
-    </h1>
-
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  // --- 5. EL RENDER (Lo que se ve) ---
+  return (
+    <div className="p-8 bg-slate-900 min-h-screen text-slate-100">
       
-      {/* COLUMNA 1: Leaderboard (Vuelta Rápida por Piloto) */}
-      <div className="bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          🏆 Clasificación
-        </h2>
-        <div className="space-y-4">
-          {pilotosUnicos.map((piloto, i) => {
-            const mejorVuelta = Math.min(...vueltas.filter(v => v.piloto_nombre === piloto).map(v => v.laptime));
-            return (
-              <div key={piloto} className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg">
-                <div>
-                  <span className="text-xs text-slate-400 block">P{i+1}</span>
-                  <span className="font-bold">{piloto}</span>
-                </div>
-                <span className="font-mono text-yellow-400">{formatLaptime(mejorVuelta)}</span>
-              </div>
-            )
-          })}
-        </div>
+      {/* BOTONERA DE FILTROS (Arriba del gráfico) */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {pilotosUnicos.map((piloto, i) => (
+          <button
+            key={piloto}
+            onClick={() => togglePiloto(piloto)}
+            className={`px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 text-sm font-bold
+              ${pilotosVisibles.includes(piloto) ? 'bg-slate-700 border-opacity-100' : 'bg-slate-900 border-opacity-20 opacity-50'}`}
+            style={{ borderColor: colores[i % colores.length] }}
+          >
+            {piloto}
+          </button>
+        ))}
       </div>
 
-      {/* COLUMNA 2 y 3: Gráfico de Evolución */}
-      <div className="lg:col-span-2 bg-slate-800 p-6 rounded-xl shadow-xl border border-slate-700">
-        <h2 className="text-xl font-bold mb-4 text-blue-400">Evolución de Tiempos</h2>
-        <div className="h-[400px] w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* LEADERBOARD (A la izquierda o arriba) */}
+        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+          <h2 className="text-xl font-bold mb-4 text-yellow-500">Fastest Laps</h2>
+          {pilotosUnicos.map(piloto => {
+            const vPiloto = vueltas.filter(v => v.piloto_nombre === piloto);
+            const mejorV = Math.min(...vPiloto.map(v => v.laptime));
+            return (
+              <div key={piloto} className="flex justify-between py-2 border-b border-slate-700">
+                <span>{piloto}</span>
+                <span className="font-mono">{formatLaptime(mejorV)}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* GRÁFICO (A la derecha o abajo) */}
+        <div className="lg:col-span-2 bg-slate-800 p-6 rounded-xl border border-slate-700 h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis 
-  domain={['auto', 'auto']} 
-  stroke="#94a3b8" 
-  tickFormatter={(value) => formatLaptime(value)} // <-- Formatea el eje Y
-/>
-<Tooltip 
-  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }}
-  formatter={(value: number) => [formatLaptime(value), "Tiempo"]} // <-- Formatea el globo al pasar el mouse
-/>
+              <YAxis 
+                domain={['auto', 'auto']} 
+                tickFormatter={formatLaptime} // <-- Aquí aplicamos el formato al eje Y
+                stroke="#94a3b8" 
+              />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#1e293b', border: 'none' }}
+                formatter={(val: number) => [formatLaptime(val), "Tiempo"]} // <-- Formato en el popup
+              />
               <Legend />
-              {pilotosUnicos.map((piloto, i) => (
-                <Line 
-                  key={piloto}
-                  type="monotone"
-                  dataKey={piloto}
-                  stroke={colores[i % colores.length]}
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 8 }}
-                />
-              ))}
+              {pilotosUnicos
+                .filter(p => pilotosVisibles.includes(p)) // <-- AQUÍ FILTRAMOS LAS LÍNEAS
+                .map((piloto, i) => (
+                  <Line 
+                    key={piloto} 
+                    type="monotone" 
+                    dataKey={piloto} 
+                    stroke={colores[i % colores.length]} 
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                  />
+                ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
-
+      
+      {/* TABLA DE DETALLES (Al final) */}
+      <div className="mt-8">
+         <h2 className="text-xl font-bold mb-4">Detalle por Vuelta</h2>
+         <table className="w-full text-left bg-slate-800 rounded-xl overflow-hidden">
+            <thead>
+               <tr className="bg-slate-700 text-slate-300">
+                  <th className="p-3">Piloto</th>
+                  <th className="p-3">Vuelta</th>
+                  <th className="p-3">Neumático</th>
+                  <th className="p-3">s1</th>
+                  <th className="p-3">s2</th>
+                  <th className="p-3">s3</th>
+                  <th className="p-3">Laptime</th>
+                  <th className="p-3">Desgaste</th>
+                  <th className="p-3">Combustible</th>
+                  <th className="p-3">ERS Deploy</th>
+                  <th className="p-3">Top Speed</th>
+               </tr>
+            </thead>
+            <tbody>
+               {vueltas
+                 .filter(v => pilotosVisibles.includes(v.piloto_nombre)) // <-- AQUÍ FILTRAMOS LA TABLA
+                 .map((v, i) => (
+                  <tr key={i} className="border-b border-slate-700">
+                     <td className="p-3">{v.piloto_nombre}</td>
+                     <td className="p-3">{v.numero_vuelta}</td>
+                        <td className="p-3">{v.neumatico}</td>
+                        <td className="p-3 font-mono">{v.s1}</td>
+                        <td className="p-3 font-mono">{v.s2}</td>
+                        <td className="p-3 font-mono">{v.s3}</td>
+                     <td className="p-3 font-mono ">{formatLaptime(v.laptime)}</td>
+                        <td className="p-3">{v.desgaste}%</td>
+                        <td className="p-3">{v.combustible} L</td>
+                        <td className="p-3">{v.ers_deployed}</td>
+                     <td className="p-3">{v.top_speed} km/h</td>
+                  </tr>
+               ))}
+            </tbody>
+         </table>
+      </div>
     </div>
-
-    {/* SECCIÓN INFERIOR: Tabla de detalles técnicos */}
-    <div className="mt-8 bg-slate-800 p-6 rounded-xl border border-slate-700 overflow-x-auto">
-      <h2 className="text-xl font-bold mb-4 text-green-400">Datos Técnicos por Vuelta</h2>
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="text-slate-400 border-b border-slate-700">
-            <th className="p-2">Piloto</th>
-            <th className="p-2">V.</th>
-            <th className="p-2">S1</th>
-            <th className="p-2">S2</th>
-            <th className="p-2">S3</th>
-            <th className="p-2">Top Speed</th>
-            <th className="p-2">Fuel</th>
-            <th className="p-2">Tyre</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vueltas.slice(0, 20).map((v, i) => (
-            <tr key={i} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-              <td className="p-2 font-semibold">{v.piloto_nombre}</td>
-              <td className="p-2">{v.numero_vuelta}</td>
-              <td className="p-2 font-mono">{v.s1.toFixed(3)}</td>
-              <td className="p-2 font-mono">{v.s2.toFixed(3)}</td>
-              <td className="p-2 font-mono">{v.s3.toFixed(3)}</td>
-              <td className="p-2 text-orange-400">{v.top_speed} km/h</td>
-              <td className="p-2">{v.combustible}L</td>
-              <td className="p-2 text-xs bg-slate-900 rounded inline-block mt-1 px-2">{v.neumatico}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
+  );
 }
