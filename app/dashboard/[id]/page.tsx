@@ -97,6 +97,13 @@ export default function DashboardSesion() {
     );
   };
 
+  // Obtenemos el tiempo mínimo de cada sector entre todas las vueltas de la sesión
+  const bestS1 = Math.min(...vueltas.map((v) => v.s1).filter(Boolean));
+  const bestS2 = Math.min(...vueltas.map((v) => v.s2).filter(Boolean));
+  const bestS3 = Math.min(...vueltas.map((v) => v.s3).filter(Boolean));
+  const bestLaptime = Math.min(...vueltas.map((v) => v.laptime).filter(Boolean));
+  const bestTheoretical = bestS1 + bestS2 + bestS3;
+
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
@@ -257,10 +264,26 @@ export default function DashboardSesion() {
                       )}
                     </div>
                   </td>
-                  <td className="p-3 font-mono">{v.s1}</td>
-                  <td className="p-3 font-mono">{v.s2}</td>
-                  <td className="p-3 font-mono">{v.s3}</td>
-                  <td className="p-3 font-mono ">{formatLaptime(v.laptime)}</td>
+                  <td
+                    className={`p-3 font-mono font-bold ${v.s1 === bestS1 ? "text-purple-400" : "text-slate-300"}`}
+                  >
+                    {v.s1.toFixed(3)}
+                  </td>
+                  <td
+                    className={`p-3 font-mono font-bold ${v.s2 === bestS2 ? "text-purple-400" : "text-slate-300"}`}
+                  >
+                    {v.s2.toFixed(3)}
+                  </td>
+                  <td
+                    className={`p-3 font-mono font-bold ${v.s3 === bestS3 ? "text-purple-400" : "text-slate-300"}`}
+                  >
+                    {v.s3.toFixed(3)}
+                  </td>
+                  <td
+                    className={`p-3 font-mono font-bold ${v.laptime === bestLaptime ? "text-yellow-400" : "text-slate-300"}`}
+                  >
+                    {formatLaptime(v.laptime)}
+                  </td>
                   <td className="p-3">
                     <div className="flex flex-col gap-1.5 w-32">
                       <div className="flex justify-between items-end">
@@ -294,31 +317,37 @@ export default function DashboardSesion() {
                     </div>
                   </td>
                   <td className="p-3">
-  <div className="flex flex-col gap-1.5 w-32">
-    <div className="flex justify-between items-end">
-      <div className="flex items-center gap-1">
-        <Fuel size={10} className="text-slate-500" />
-        <span className="text-[10px] font-mono text-slate-500 uppercase">Fuel Level</span>
-      </div>
-      <span className={`text-xs font-black font-mono ${
-        v.combustible < 5 ? 'text-orange-500' : 'text-sky-400'
-      }`}>
-        {v.combustible} L
-      </span>
-    </div>
-    
-    <div className="w-full bg-slate-900/50 h-2 rounded-full border border-slate-700 overflow-hidden">
-      <div 
-        className={`h-full transition-all duration-700 ease-in-out ${
-          v.combustible < 5 
-            ? 'bg-gradient-to-r from-orange-600 to-red-500' 
-            : 'bg-gradient-to-r from-sky-600 to-indigo-500'
-        }`}
-        style={{ width: `${(v.combustible / 110) * 100}%` }}
-      />
-    </div>
-  </div>
-</td>
+                    <div className="flex flex-col gap-1.5 w-32">
+                      <div className="flex justify-between items-end">
+                        <div className="flex items-center gap-1">
+                          <Fuel size={10} className="text-slate-500" />
+                          <span className="text-[10px] font-mono text-slate-500 uppercase">
+                            Fuel Level
+                          </span>
+                        </div>
+                        <span
+                          className={`text-xs font-black font-mono ${
+                            v.combustible < 5
+                              ? "text-orange-500"
+                              : "text-sky-400"
+                          }`}
+                        >
+                          {v.combustible} L
+                        </span>
+                      </div>
+
+                      <div className="w-full bg-slate-900/50 h-2 rounded-full border border-slate-700 overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-700 ease-in-out ${
+                            v.combustible < 5
+                              ? "bg-gradient-to-r from-orange-600 to-red-500"
+                              : "bg-gradient-to-r from-sky-600 to-indigo-500"
+                          }`}
+                          style={{ width: `${(v.combustible / 110) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
                   <td className="p-3">{v.ers_deployed} kJ</td>
                   <td className="p-3">{v.top_speed} km/h</td>
                 </tr>
