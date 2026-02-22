@@ -101,16 +101,16 @@ export default function Home() {
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-red-500 transition-colors w-4 h-4" />
               <input 
-                type="text"
-                placeholder="Buscar circuito..."
-                className="w-full sm:w-64 bg-slate-800/50 border border-slate-700 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-red-600 transition-all placeholder:text-slate-600"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
+  type="text"
+  placeholder="Buscar por circuito o ciudad..." // <-- Placeholder más descriptivo
+  className="w-full sm:w-64 bg-slate-800/50 border border-slate-700 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-red-600 transition-all placeholder:text-slate-600"
+  value={busqueda}
+  onChange={(e) => setBusqueda(e.target.value)}
+/>
             </div>
             
             <Link 
-              href="/upload" 
+              href="/create" 
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-900/20 flex items-center justify-center gap-2 active:scale-95"
             >
               NUEVA SESIÓN
@@ -184,7 +184,7 @@ export default function Home() {
                   {busqueda ? `No se encontraron resultados para "${busqueda}"` : "Tu garaje está vacío"}
                 </p>
                 {!busqueda && (
-                  <Link href="/upload" className="text-red-500 font-bold hover:underline">
+                  <Link href="/create" className="text-red-500 font-bold hover:underline">
                     Sube tu primer CSV para empezar el análisis →
                   </Link>
                 )}

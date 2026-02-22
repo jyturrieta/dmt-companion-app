@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 // --- 1. LAS FUNCIONES DE UTILIDAD (Fuera del componente) ---
 const formatLaptime = (seconds: number) => {
@@ -14,6 +16,14 @@ const formatLaptime = (seconds: number) => {
 };
 
 const colores = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+const tireConfig: Record<string, { color: string, label: string }> = {
+  'S': { color: '#ef4444', label: 'S' },    // Rojo
+  'M': { color: '#eab308', label: 'M' },  // Amarillo
+  'H': { color: '#f8fafc', label: 'H' },    // Blanco
+  'I': { color: '#22c55e', label: 'I' },   // Verde
+  'W': { color: '#3b82f6', label: 'W' },     // Azul
+};
 
 export default function DashboardSesion() {
   const { id } = useParams();
@@ -62,27 +72,61 @@ export default function DashboardSesion() {
     );
   };
 
-  if (loading) return <p className="p-10 text-center">Analizando telemetría...</p>;
+ if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
+      <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+      <p className="text-slate-400 font-mono text-sm uppercase tracking-widest">Analizando telemetría...</p>
+    </div>
+  );
 
-  // --- 5. EL RENDER (Lo que se ve) ---
   return (
     <div className="p-8 bg-slate-900 min-h-screen text-slate-100">
       
-      {/* BOTONERA DE FILTROS (Arriba del gráfico) */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {pilotosUnicos.map((piloto, i) => (
-          <button
-            key={piloto}
-            onClick={() => togglePiloto(piloto)}
-            className={`px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 text-sm font-bold
-              ${pilotosVisibles.includes(piloto) ? 'bg-slate-700 border-opacity-100' : 'bg-slate-900 border-opacity-20 opacity-50'}`}
-            style={{ borderColor: colores[i % colores.length] }}
+      {/* HEADER CON BOTÓN DE REGRESO */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/" 
+            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-all text-slate-400 hover:text-white group"
           >
-            {piloto}
-          </button>
-        ))}
+            <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-black italic tracking-tighter text-white uppercase">
+              SESSION <span className="text-red-600">ANALYSIS</span>
+            </h1>
+            <p className="text-slate-500 text-xs font-mono uppercase tracking-widest">
+              ID: {id}
+            </p>
+          </div>
+        </div>
+
+        {/* Aquí podrías poner botones de exportar o similares en el futuro */}
       </div>
 
+      {/* BOTONERA DE FILTROS */}
+      <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 mb-8">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">
+          Filtrar Pilotos
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {pilotosUnicos.map((piloto, i) => (
+            <button
+              key={piloto}
+              onClick={() => togglePiloto(piloto)}
+              className={`px-4 py-2 rounded-xl border-2 transition-all flex items-center gap-2 text-sm font-bold
+                ${pilotosVisibles.includes(piloto) ? 'bg-slate-700 border-opacity-100' : 'bg-slate-900 border-opacity-20 opacity-40'}`}
+              style={{ borderColor: colores[i % colores.length] }}
+            >
+              <div 
+                className="w-2 h-2 rounded-full" 
+                style={{ backgroundColor: colores[i % colores.length] }}
+              />
+              {piloto}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEADERBOARD (A la izquierda o arriba) */}
         <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
@@ -158,14 +202,27 @@ export default function DashboardSesion() {
                   <tr key={i} className="border-b border-slate-700">
                      <td className="p-3">{v.piloto_nombre}</td>
                      <td className="p-3">{v.numero_vuelta}</td>
-                        <td className="p-3">{v.neumatico}</td>
+                        <td className="p-3">
+  <div className="flex items-center gap-2">
+      <div 
+        className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-black shadow-lg"
+        style={{ 
+          borderColor: tireConfig[v.neumatico].color, 
+          color: tireConfig[v.neumatico].color,
+          backgroundColor: `${tireConfig[v.neumatico].color}10` // Fondo muy suave
+        }}
+      >
+        {tireConfig[v.neumatico].label}
+      </div>
+  </div>
+</td>
                         <td className="p-3 font-mono">{v.s1}</td>
                         <td className="p-3 font-mono">{v.s2}</td>
                         <td className="p-3 font-mono">{v.s3}</td>
                      <td className="p-3 font-mono ">{formatLaptime(v.laptime)}</td>
                         <td className="p-3">{v.desgaste}%</td>
                         <td className="p-3">{v.combustible} L</td>
-                        <td className="p-3">{v.ers_deployed}</td>
+                        <td className="p-3">{v.ers_deployed} kJ</td>
                      <td className="p-3">{v.top_speed} km/h</td>
                   </tr>
                ))}
