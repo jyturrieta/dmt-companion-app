@@ -1,63 +1,79 @@
 // src/services/csvProcessor.ts
-import Papa from 'papaparse';
+import Papa from "papaparse";
 
-export interface LapData {
-  sesion_id: string;
-  piloto_nombre: string;
-  numero_vuelta: number;
-  s1: number;
-  s2: number;
-  s3: number;
-  laptime: number;
-  neumatico: string;
-}
-
-export const parseTelemetryCSV = (file: File, sesionId: string): Promise<LapData[]> => {
+export const parseTelemetryCSV = (
+  file: File,
+  sesionId: string,
+): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       skipEmptyLines: true,
-      complete: (results) => {
-        const rows = results.data as string[][];
-        const allLaps: LapData[] = [];
+      // src/services/csvProcessor.ts
+      // src/services/csvProcessor.ts
+// src/services/csvProcessor.ts
+complete: (results) => {
+  const rows = results.data as string[][];
+  const allLaps: any[] = [];
+  
+  // 1. Encontrar la fila de los nombres (Fila 8 en tu caso)
+  const pilotRow = rows[8];
+  const pilots: { name: string; startIndex: number }[] = [];
 
-        // 1. Identificar Pilotos: Están en la Fila 0, Columnas 1, 5, 9, etc.
-        const headerRow = rows[0];
-        const pilots: { name: string; colIndex: number }[] = [];
-        
-        for (let i = 1; i < headerRow.length; i += 4) {
-          if (headerRow[i]) {
-            pilots.push({ name: headerRow[i], colIndex: i });
-          }
-        }
-
-        // 2. Recorrer filas de vueltas (empezando desde la fila 2 o 3 según tu CSV)
-        for (let i = 2; i < rows.length; i++) {
-          const row = rows[i];
-          const lapNumber = parseInt(row[0]);
-          if (isNaN(lapNumber)) continue;
-
-          pilots.forEach((pilot) => {
-            const baseCol = pilot.colIndex;
-            // Estructura: S1 (base), S2 (base+1), S3 (base+2), Laptime (base+3)
-            const s1 = parseFloat(row[baseCol]?.replace(',', '.'));
-            const s2 = parseFloat(row[baseCol + 1]?.replace(',', '.'));
-            const s3 = parseFloat(row[baseCol + 2]?.replace(',', '.'));
-            const laptime = parseFloat(row[baseCol + 3]?.replace(',', '.'));
-
-            if (!isNaN(laptime)) {
-              allLaps.push({
-                sesion_id: sesionId,
-                piloto_nombre: pilot.name,
-                numero_vuelta: lapNumber,
-                s1, s2, s3, laptime,
-                neumatico: 'S' // Por ahora fijo, luego lo mapeamos
-              });
-            }
-          });
-        }
-        resolve(allLaps);
-      },
-      error: (error) => reject(error)
-    });
+  // Buscamos todos los pilotos que dicen "Drivers lap statistics"
+  pilotRow.forEach((cell, index) => {
+    if (cell && cell.includes("Drivers lap statistics")) {
+      const name = cell.replace("Drivers lap statistics", "").trim();
+      pilots.push({ name, startIndex: index });
+    }
   });
-};
+
+  console.log("Pilotos detectados por columnas:", pilots);
+
+  // 2. Recorrer las filas de datos (A partir de la fila 10 que son los números)
+  for (let i = 10; i < rows.length; i++) {
+    const row = rows[i];
+    const lapNumber = parseInt(row[0]);
+    if (isNaN(lapNumber)) continue;
+
+    // 3. Para cada piloto encontrado, extraer sus 12 columnas correspondientes
+    pilots.forEach((pilot, pilotIndex) => {
+      // El primer piloto empieza en col 1, el segundo en col 13, etc. (cada bloque mide 12)
+      const base = pilot.startIndex; 
+
+      const s1 = parseFloat(row[base]?.replace(',', '.'));
+      const s2 = parseFloat(row[base + 1]?.replace(',', '.'));
+      const s3 = parseFloat(row[base + 2]?.replace(',', '.'));
+      const laptime = parseFloat(row[base + 3]?.replace(',', '.'));
+
+      // Solo agregamos la vuelta si el piloto realmente corrió esa vuelta (S1 tiene valor)
+      if (!isNaN(s1) && s1 > 0) {
+        allLaps.push({
+          sesion_id: sesionId,
+          piloto_nombre: pilot.name,
+          numero_vuelta: lapNumber,
+          s1: s1,
+          s2: s2,
+          s3: s3,
+          laptime: laptime || (s1 + s2 + s3),
+          neumatico: row[base + 4] || '',
+          desgaste: parseInt(row[base + 5]) || 0,
+          combustible: parseFloat(row[base + 6]?.replace(',', '.')) || 0,
+          ers_deployed: parseInt(row[base + 7]) || 0,
+          fl: parseFloat(row[base + 8]?.replace(',', '.')) || 0,
+          c: parseFloat(row[base + 9]?.replace(',', '.')) || 0,
+          kpis: parseInt(row[base + 10]) || 0,
+          top_speed: parseInt(row[base + 11]) || 0
+        });
+      }
+    });
+  }
+
+  console.log("Total vueltas procesadas (Todos los pilotos):", allLaps.length);
+  resolve(allLaps);
+},
+      error: (err) => {
+        reject(err);
+      }
+    }); 
+  });
+}
