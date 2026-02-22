@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Link from "next/link";
-import { ArrowLeft, Fuel } from "lucide-react";
+import { ArrowLeft, Fuel, Activity } from "lucide-react";
 
 // --- 1. LAS FUNCIONES DE UTILIDAD (Fuera del componente) ---
 const formatLaptime = (seconds: number) => {
@@ -98,11 +98,26 @@ export default function DashboardSesion() {
   };
 
   // Obtenemos el tiempo mínimo de cada sector entre todas las vueltas de la sesión
-  const bestS1 = Math.min(...vueltas.map((v) => v.s1).filter(Boolean));
-  const bestS2 = Math.min(...vueltas.map((v) => v.s2).filter(Boolean));
-  const bestS3 = Math.min(...vueltas.map((v) => v.s3).filter(Boolean));
-  const bestLaptime = Math.min(...vueltas.map((v) => v.laptime).filter(Boolean));
-  const bestTheoretical = bestS1 + bestS2 + bestS3;
+  // Filtramos solo vueltas válidas (donde los 3 sectores sean mayores a 2 segundos)
+  const vueltasValidas = vueltas.filter(
+    (v) => v.s1 > 2 && v.s2 > 2 && v.s3 > 2 && v.laptime > 10,
+  );
+  const bestS1 =
+    vueltasValidas.length > 0
+      ? Math.min(...vueltasValidas.map((v) => v.s1))
+      : null;
+  const bestS2 =
+    vueltasValidas.length > 0
+      ? Math.min(...vueltasValidas.map((v) => v.s2))
+      : null;
+  const bestS3 =
+    vueltasValidas.length > 0
+      ? Math.min(...vueltasValidas.map((v) => v.s3))
+      : null;
+  const bestLap =
+    vueltasValidas.length > 0
+      ? Math.min(...vueltasValidas.map((v) => v.laptime))
+      : null;
 
   if (loading)
     return (
@@ -264,25 +279,33 @@ export default function DashboardSesion() {
                       )}
                     </div>
                   </td>
+                  {/* Ejemplo para Sector 1 */}
                   <td
-                    className={`p-3 font-mono font-bold ${v.s1 === bestS1 ? "text-purple-400" : "text-slate-300"}`}
+                    className={`p-3 font-mono ${v.s1 === bestS1 ? "text-purple-400 font-bold" : "text-slate-400"}`}
                   >
-                    {v.s1.toFixed(3)}
+                    {v.s1 > 0 ? v.s1.toFixed(3) : "-.---"}
                   </td>
                   <td
-                    className={`p-3 font-mono font-bold ${v.s2 === bestS2 ? "text-purple-400" : "text-slate-300"}`}
+                    className={`p-3 font-mono font-bold ${v.s2 === bestS2 ? "text-purple-400" : "text-slate-400"}`}
                   >
-                    {v.s2.toFixed(3)}
+                    {v.s2 > 0 ? v.s2.toFixed(3) : "-.---"}
                   </td>
                   <td
-                    className={`p-3 font-mono font-bold ${v.s3 === bestS3 ? "text-purple-400" : "text-slate-300"}`}
+                    className={`p-3 font-mono font-bold ${v.s3 === bestS3 ? "text-purple-400" : "text-slate-400"}`}
                   >
-                    {v.s3.toFixed(3)}
+                    {v.s3 > 0 ? v.s3.toFixed(3) : "-.---"}
                   </td>
-                  <td
-                    className={`p-3 font-mono font-bold ${v.laptime === bestLaptime ? "text-yellow-400" : "text-slate-300"}`}
-                  >
-                    {formatLaptime(v.laptime)}
+                  <td className="p-3">
+                    <div
+                      className={`flex items-center gap-2 font-mono font-bold ${v.laptime === bestLap ? "text-purple-400" : "text-slate-100"}`}
+                    >
+                      {formatLaptime(v.laptime)}
+                      {v.laptime === bestLap && (
+                        <span className="bg-purple-500/20 text-purple-400 p-1 rounded">
+                          <Activity size={12} className="stroke-[3px]" />
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-3">
                     <div className="flex flex-col gap-1.5 w-32">
