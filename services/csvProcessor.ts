@@ -15,11 +15,27 @@ complete: (results) => {
   const rows = results.data as string[][];
   const allLaps: any[] = [];
   
-  // 1. Encontrar la fila de los nombres (Fila 8 en tu caso)
-  const pilotRow = rows[8];
+  // 1. ENCONTRAR DINÁMICAMENTE LAS FILAS CLAVE
+  // Buscamos la fila donde empiezan los nombres de los pilotos
+  const rowIndexPilotos = rows.findIndex(row => 
+    row.some(cell => cell && cell.includes("Drivers lap statistics"))
+  );
+
+  // Buscamos la fila donde están los encabezados (S1, S2, S3...) 
+  // que suele estar justo debajo de la de los pilotos
+  const rowIndexHeaders = rows.findIndex(row => 
+    row.some(cell => cell === "S1") && row.some(cell => cell === "Laptime")
+  );
+
+  if (rowIndexPilotos === -1 || rowIndexHeaders === -1) {
+    console.error("No se encontró la estructura de telemetría en el CSV");
+    return;
+  }
+
+  const pilotRow = rows[rowIndexPilotos];
   const pilots: { name: string; startIndex: number }[] = [];
 
-  // Buscamos todos los pilotos que dicen "Drivers lap statistics"
+  // 2. DETECTAR PILOTOS Y SUS COLUMNAS
   pilotRow.forEach((cell, index) => {
     if (cell && cell.includes("Drivers lap statistics")) {
       const name = cell.replace("Drivers lap statistics", "").trim();
@@ -27,25 +43,31 @@ complete: (results) => {
     }
   });
 
-  console.log("Pilotos detectados por columnas:", pilots);
+  console.log("Pilotos detectados dinámicamente:", pilots);
 
-  // 2. Recorrer las filas de datos (A partir de la fila 10 que son los números)
-  for (let i = 10; i < rows.length; i++) {
+  // 3. RECORRER DATOS (Empezamos justo después de la fila de encabezados)
+  for (let i = rowIndexHeaders + 1; i < rows.length; i++) {
     const row = rows[i];
+    
+    // La primera columna de la fila de datos siempre es el número de vuelta
     const lapNumber = parseInt(row[0]);
     if (isNaN(lapNumber)) continue;
 
-    // 3. Para cada piloto encontrado, extraer sus 12 columnas correspondientes
-    pilots.forEach((pilot, pilotIndex) => {
-      // El primer piloto empieza en col 1, el segundo en col 13, etc. (cada bloque mide 12)
+    pilots.forEach((pilot) => {
       const base = pilot.startIndex; 
 
-      const s1 = parseFloat(row[base]?.replace(',', '.'));
-      const s2 = parseFloat(row[base + 1]?.replace(',', '.'));
-      const s3 = parseFloat(row[base + 2]?.replace(',', '.'));
-      const laptime = parseFloat(row[base + 3]?.replace(',', '.'));
+      // Función auxiliar para limpiar números
+      const parseNum = (val: string) => {
+        if (!val) return 0;
+        return parseFloat(val.replace(',', '.'));
+      };
 
-      // Solo agregamos la vuelta si el piloto realmente corrió esa vuelta (S1 tiene valor)
+      const s1 = parseNum(row[base]);
+      const s2 = parseNum(row[base + 1]);
+      const s3 = parseNum(row[base + 2]);
+      const laptime = parseNum(row[base + 3]);
+
+      // Solo agregamos la vuelta si hay datos reales
       if (!isNaN(s1) && s1 > 0) {
         allLaps.push({
           sesion_id: sesionId,
@@ -57,18 +79,16 @@ complete: (results) => {
           laptime: laptime || (s1 + s2 + s3),
           neumatico: row[base + 4] || '',
           desgaste: parseInt(row[base + 5]) || 0,
-          combustible: parseFloat(row[base + 6]?.replace(',', '.')) || 0,
+          combustible: parseNum(row[base + 6]),
           ers_deployed: parseInt(row[base + 7]) || 0,
-          fl: parseFloat(row[base + 8]?.replace(',', '.')) || 0,
-          c: parseFloat(row[base + 9]?.replace(',', '.')) || 0,
-          kpis: parseInt(row[base + 10]) || 0,
           top_speed: parseInt(row[base + 11]) || 0
+          // Agrega aquí FL, C o KPIs si los necesitas en tu DB
         });
       }
     });
   }
 
-  console.log("Total vueltas procesadas (Todos los pilotos):", allLaps.length);
+  console.log("Proceso finalizado. Vueltas encontradas:", allLaps.length);
   resolve(allLaps);
 },
       error: (err) => {
