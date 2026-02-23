@@ -1,7 +1,8 @@
 // middleware.ts
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 export function middleware(req: NextRequest) {
   const session = req.cookies.get('user_session')
   const isLoginPage = req.nextUrl.pathname === '/login'
