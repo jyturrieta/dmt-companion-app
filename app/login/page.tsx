@@ -47,7 +47,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter">
             DAMATTA <span className="text-red-600">RACING</span>
           </h1>
-          <p className="text-slate-500 text-xs font-mono mt-2 uppercase tracking-widest">Acesso Restrito</p>
+          <p className="text-slate-500 text-xs font-mono mt-2 uppercase tracking-widest">LOGIN TO YOUR ACCOUNT</p>
         </div>
         
         {error && <p className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-lg text-xs mb-6 text-center font-bold uppercase tracking-tight">{error}</p>}
