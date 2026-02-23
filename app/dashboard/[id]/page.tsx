@@ -9,11 +9,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   ReferenceLine
 } from "recharts";
 import Link from "next/link";
-import { ArrowLeft, Fuel, Activity, Timer, Gauge, Trophy, User, Target } from "lucide-react";
+import { ArrowLeft, Fuel, Activity, Timer, Gauge, Trophy, User, Target, CheckSquare, Square } from "lucide-react";
 
 const formatLaptime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return "0:00.000";
@@ -23,7 +24,12 @@ const formatLaptime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, "0")}.${millis.toString().padStart(3, "0")}`;
 };
 
-const colores = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
+const coloresPilotos = [
+  "#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", 
+  "#06b6d4", "#f43f5e", "#14b8a6", "#84cc16", "#a855f7", "#f97316", 
+  "#34d399", "#60a5fa", "#fb7185", "#fbbf24", "#a78bfa", "#22d3ee", 
+  "#c084fc", "#4ade80", "#f472b6", "#2dd4bf"
+];
 
 const tireConfig: Record<string, { color: string; label: string }> = {
   S: { color: "#ef4444", label: "S" },
@@ -49,17 +55,19 @@ export default function DashboardSesion() {
 
       if (data) {
         setVueltas(data);
-        const unicos = Array.from(new Set(data.map((v: any) => v.piloto_nombre)));
-        setPilotosVisibles(unicos as string[]);
       }
       setLoading(false);
     };
     fetchData();
   }, [id]);
 
-  const pilotosUnicos = useMemo(() => 
-    Array.from(new Set(vueltas.map(v => v.piloto_nombre))), 
-  [vueltas]);
+  const pilotosData = useMemo(() => {
+    const unicos = Array.from(new Set(vueltas.map(v => v.piloto_nombre)));
+    return unicos.map((nombre, index) => ({
+      nombre,
+      color: coloresPilotos[index % coloresPilotos.length]
+    }));
+  }, [vueltas]);
 
   const stats = useMemo(() => {
     const competitivas = vueltas.filter(v => v.laptime > 40 && v.s1 > 5 && v.s2 > 5 && v.s3 > 5);
@@ -73,10 +81,10 @@ export default function DashboardSesion() {
     const bestS3 = Math.min(...competitivas.map(v => v.s3));
 
     const personalBests: Record<string, any> = {};
-    pilotosUnicos.forEach(piloto => {
-      const pLaps = competitivas.filter(v => v.piloto_nombre === piloto);
+    pilotosData.forEach(({ nombre }) => {
+      const pLaps = competitivas.filter(v => v.piloto_nombre === nombre);
       if (pLaps.length > 0) {
-        personalBests[piloto] = {
+        personalBests[nombre] = {
           time: Math.min(...pLaps.map(v => v.laptime)),
           s1: Math.min(...pLaps.map(v => v.s1)),
           s2: Math.min(...pLaps.map(v => v.s2)),
@@ -94,10 +102,19 @@ export default function DashboardSesion() {
       idealLap: bestS1 + bestS2 + bestS3, 
       personalBests 
     };
-  }, [vueltas, pilotosUnicos]);
+  }, [vueltas, pilotosData]);
 
   const togglePiloto = (nombre: string) => {
     setPilotosVisibles(prev => prev.includes(nombre) ? prev.filter(p => p !== nombre) : [...prev, nombre]);
+  };
+
+  // FUNCIONES DE SELECCIÓN MASIVA
+  const selectAll = () => {
+    setPilotosVisibles(pilotosData.map(p => p.nombre));
+  };
+
+  const clearAll = () => {
+    setPilotosVisibles([]);
   };
 
   const chartData = useMemo(() => {
@@ -149,7 +166,7 @@ export default function DashboardSesion() {
         </div>
         <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-emerald-400">
           <p className="text-[10px] font-mono text-slate-500 mb-1 tracking-widest">Active Drivers</p>
-          <p className="text-2xl font-black italic">{pilotosUnicos.length}</p>
+          <p className="text-2xl font-black italic">{pilotosData.length}</p>
           <div className="mt-2 text-[9px] font-bold py-1 uppercase tracking-tighter italic">Total Grid</div>
         </div>
       </div>
@@ -157,22 +174,43 @@ export default function DashboardSesion() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         {/* SIDEBAR FILTROS */}
         <div className="lg:col-span-1 bg-slate-900/50 border border-slate-800 p-5 rounded-2xl">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Drivers</p>
-          <div className="flex flex-col gap-3">
-            {pilotosUnicos.map((piloto, i) => (
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Drivers Selection</p>
+          </div>
+          
+          {/* BOTONES DE ACCIÓN RÁPIDA */}
+          <div className="grid grid-cols-2 gap-2 mb-6">
+            <button 
+              onClick={selectAll}
+              className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors"
+            >
+              <CheckSquare size={14} className="text-emerald-500" /> Select All
+            </button>
+            <button 
+              onClick={clearAll}
+              className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors"
+            >
+              <Square size={14} className="text-red-500" /> Clear All
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+            {pilotosData.map((piloto) => (
               <button
-                key={piloto}
-                onClick={() => togglePiloto(piloto)}
+                key={piloto.nombre}
+                onClick={() => togglePiloto(piloto.nombre)}
                 className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-left
-                  ${pilotosVisibles.includes(piloto) ? "bg-slate-800 border-opacity-100" : "bg-slate-950 border-opacity-20 opacity-30"}`}
-                style={{ borderColor: colores[i % colores.length] }}
+                  ${pilotosVisibles.includes(piloto.nombre) 
+                    ? "bg-slate-800 border-opacity-100" 
+                    : "bg-slate-950 border-slate-800 border-opacity-40 opacity-40 hover:opacity-70"}`}
+                style={{ borderColor: pilotosVisibles.includes(piloto.nombre) ? piloto.color : 'transparent' }}
               >
                 <div className="font-black text-white uppercase italic tracking-tighter flex justify-between items-center">
-                  <span>{piloto}</span>
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colores[i % colores.length] }} />
+                  <span>{piloto.nombre}</span>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: piloto.color }} />
                 </div>
                 <div className="text-[9px] font-mono text-slate-400 mt-1 flex items-center gap-1">
-                  <Target size={10} className="text-yellow-600" /> PB: {formatLaptime(stats?.personalBests[piloto]?.time || 0)}
+                  <Target size={10} className="text-yellow-600" /> PB: {formatLaptime(stats?.personalBests[piloto.nombre]?.time || 0)}
                 </div>
               </button>
             ))}
@@ -186,11 +224,25 @@ export default function DashboardSesion() {
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis dataKey="name" stroke="#475569" fontSize={10} axisLine={false} />
               <YAxis hide domain={['auto', 'auto']} />
-              <Tooltip contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", borderRadius: "12px" }} formatter={(val: any) => [formatLaptime(val), "Time"]} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", borderRadius: "12px" }} 
+                formatter={(val: any) => [formatLaptime(val), "Time"]} 
+              />
+              <Legend verticalAlign="top" height={36} iconType="circle" />
               {stats && <ReferenceLine y={stats.bestLap} stroke="#a855f7" strokeDasharray="5 5" />}
-              {pilotosUnicos.filter(p => pilotosVisibles.includes(p)).map((piloto, i) => (
-                <Line key={piloto} type="monotone" dataKey={piloto} stroke={colores[i % colores.length]} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              ))}
+              {pilotosData
+                .filter(p => pilotosVisibles.includes(p.nombre))
+                .map((piloto) => (
+                  <Line 
+                    key={piloto.nombre} 
+                    type="monotone" 
+                    dataKey={piloto.nombre} 
+                    stroke={piloto.color} 
+                    strokeWidth={3} 
+                    dot={{ r: 4, fill: piloto.color }} 
+                    activeDot={{ r: 6 }} 
+                  />
+                ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -248,7 +300,6 @@ export default function DashboardSesion() {
                       </div>
                     </td>
 
-                    {/* WEAR RECUPERADO (COLORES DINÁMICOS) */}
                     <td className="p-4">
                       <div className="flex flex-col gap-1.5 w-32">
                         <div className="flex justify-between items-end">
@@ -264,7 +315,6 @@ export default function DashboardSesion() {
                       </div>
                     </td>
 
-                    {/* FUEL RECUPERADO (AZUL SKY) */}
                     <td className="p-4">
                       <div className="flex flex-col gap-1.5 w-32">
                         <div className="flex justify-between items-end">
