@@ -45,7 +45,7 @@ export default function LoginPage() {
       <form onSubmit={handleLogin} className="bg-slate-900 p-8 rounded-2xl border border-slate-800 w-full max-w-md shadow-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter">
-            PIT <span className="text-red-600">WALL</span>
+            DAMATTA <span className="text-red-600">RACING</span>
           </h1>
           <p className="text-slate-500 text-xs font-mono mt-2 uppercase tracking-widest">Acesso Restrito</p>
         </div>
