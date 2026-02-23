@@ -124,7 +124,7 @@ export default function DashboardSesion() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
         <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="text-slate-400 font-mono text-sm uppercase tracking-widest">
-          Analizando telemetría...
+          Loading telemetry data...
         </p>
       </div>
     );
