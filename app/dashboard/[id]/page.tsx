@@ -213,7 +213,8 @@ export default function DashboardSesion() {
               />
               <Tooltip
                 contentStyle={{ backgroundColor: "#1e293b", border: "none" }}
-                formatter={(val: number) => [formatLaptime(val), "Tiempo"]} // <-- Formato en el popup
+                labelStyle={{ color: "#94a3b8", fontWeight: "bold" }}
+                formatter={(value: any) => formatLaptime(value)} // <-- Aquí aplicamos el formato al tooltip
               />
               <Legend />
               {pilotosUnicos
