@@ -14,7 +14,8 @@ import {
   ReferenceLine
 } from "recharts";
 import Link from "next/link";
-import { ArrowLeft, Fuel, Activity, Timer, Gauge, Trophy, User, Target, CheckSquare, Square } from "lucide-react";
+// Añadido Zap para el ERS
+import { ArrowLeft, Fuel, Activity, Timer, Gauge, Trophy, User, Target, CheckSquare, Square, Zap } from "lucide-react";
 
 const formatLaptime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return "0:00.000";
@@ -108,7 +109,6 @@ export default function DashboardSesion() {
     setPilotosVisibles(prev => prev.includes(nombre) ? prev.filter(p => p !== nombre) : [...prev, nombre]);
   };
 
-  // FUNCIONES DE SELECCIÓN MASIVA
   const selectAll = () => {
     setPilotosVisibles(pilotosData.map(p => p.nombre));
   };
@@ -177,34 +177,19 @@ export default function DashboardSesion() {
           <div className="flex justify-between items-center mb-4">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Drivers Selection</p>
           </div>
-          
-          {/* BOTONES DE ACCIÓN RÁPIDA */}
           <div className="grid grid-cols-2 gap-2 mb-6">
-            <button 
-              onClick={selectAll}
-              className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors"
-            >
+            <button onClick={selectAll} className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors">
               <CheckSquare size={14} className="text-emerald-500" /> Select All
             </button>
-            <button 
-              onClick={clearAll}
-              className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors"
-            >
+            <button onClick={clearAll} className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors">
               <Square size={14} className="text-red-500" /> Clear All
             </button>
           </div>
-
           <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
             {pilotosData.map((piloto) => (
-              <button
-                key={piloto.nombre}
-                onClick={() => togglePiloto(piloto.nombre)}
-                className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-left
-                  ${pilotosVisibles.includes(piloto.nombre) 
-                    ? "bg-slate-800 border-opacity-100" 
-                    : "bg-slate-950 border-slate-800 border-opacity-40 opacity-40 hover:opacity-70"}`}
-                style={{ borderColor: pilotosVisibles.includes(piloto.nombre) ? piloto.color : 'transparent' }}
-              >
+              <button key={piloto.nombre} onClick={() => togglePiloto(piloto.nombre)}
+                className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-left ${pilotosVisibles.includes(piloto.nombre) ? "bg-slate-800 border-opacity-100" : "bg-slate-950 border-slate-800 border-opacity-40 opacity-40 hover:opacity-70"}`}
+                style={{ borderColor: pilotosVisibles.includes(piloto.nombre) ? piloto.color : 'transparent' }}>
                 <div className="font-black text-white uppercase italic tracking-tighter flex justify-between items-center">
                   <span>{piloto.nombre}</span>
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: piloto.color }} />
@@ -224,25 +209,12 @@ export default function DashboardSesion() {
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis dataKey="name" stroke="#475569" fontSize={10} axisLine={false} />
               <YAxis hide domain={['auto', 'auto']} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", borderRadius: "12px" }} 
-                formatter={(val: any) => [formatLaptime(val), "Time"]} 
-              />
+              <Tooltip contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", borderRadius: "12px" }} formatter={(val: any) => [formatLaptime(val), "Time"]} />
               <Legend verticalAlign="top" height={36} iconType="circle" />
               {stats && <ReferenceLine y={stats.bestLap} stroke="#a855f7" strokeDasharray="5 5" />}
-              {pilotosData
-                .filter(p => pilotosVisibles.includes(p.nombre))
-                .map((piloto) => (
-                  <Line 
-                    key={piloto.nombre} 
-                    type="monotone" 
-                    dataKey={piloto.nombre} 
-                    stroke={piloto.color} 
-                    strokeWidth={3} 
-                    dot={{ r: 4, fill: piloto.color }} 
-                    activeDot={{ r: 6 }} 
-                  />
-                ))}
+              {pilotosData.filter(p => pilotosVisibles.includes(p.nombre)).map((piloto) => (
+                <Line key={piloto.nombre} type="monotone" dataKey={piloto.nombre} stroke={piloto.color} strokeWidth={3} dot={{ r: 4, fill: piloto.color }} activeDot={{ r: 6 }} />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -263,6 +235,7 @@ export default function DashboardSesion() {
                 <th className="p-4">Laptime</th>
                 <th className="p-4">Wear</th>
                 <th className="p-4">Fuel</th>
+                <th className="p-4 text-center">ERS Deployed</th>
                 <th className="p-4 text-center">Top Speed</th>
               </tr>
             </thead>
@@ -270,7 +243,6 @@ export default function DashboardSesion() {
               {vueltas.filter(v => pilotosVisibles.includes(v.piloto_nombre)).map((v, i) => {
                 const isOverallBest = v.laptime === stats?.bestLap;
                 const isPersonalBest = v.laptime === stats?.personalBests[v.piloto_nombre]?.time;
-
                 const getSectorClass = (val: number, personalBest: number, overallBest: number) => {
                   if (val === overallBest) return "text-purple-400 font-bold";
                   if (val === personalBest) return "text-emerald-400 font-bold";
@@ -287,34 +259,26 @@ export default function DashboardSesion() {
                         {tireConfig[v.neumatico]?.label || '?'}
                       </div>
                     </td>
-                    
                     <td className={`p-4 font-mono ${getSectorClass(v.s1, stats?.personalBests[v.piloto_nombre]?.s1, stats?.bestS1 || 0)}`}>{v.s1.toFixed(3)}</td>
                     <td className={`p-4 font-mono ${getSectorClass(v.s2, stats?.personalBests[v.piloto_nombre]?.s2, stats?.bestS2 || 0)}`}>{v.s2.toFixed(3)}</td>
                     <td className={`p-4 font-mono ${getSectorClass(v.s3, stats?.personalBests[v.piloto_nombre]?.s3, stats?.bestS3 || 0)}`}>{v.s3.toFixed(3)}</td>
-                    
                     <td className="p-4">
-                      <div className={`flex items-center gap-2 font-mono font-bold 
-                        ${isOverallBest ? "text-purple-400" : isPersonalBest ? "text-emerald-400" : "text-slate-100"}`}>
+                      <div className={`flex items-center gap-2 font-mono font-bold ${isOverallBest ? "text-purple-400" : isPersonalBest ? "text-emerald-400" : "text-slate-100"}`}>
                         {formatLaptime(v.laptime)}
                         {isOverallBest && <Timer size={12} />}
                       </div>
                     </td>
-
                     <td className="p-4">
                       <div className="flex flex-col gap-1.5 w-32">
                         <div className="flex justify-between items-end">
                           <span className="text-[9px] font-mono text-slate-500 uppercase">Usage</span>
-                          <span className={`text-xs font-black font-mono ${v.desgaste > 75 ? "text-red-500" : v.desgaste > 45 ? "text-yellow-500" : "text-emerald-500"}`}>
-                            {v.desgaste}%
-                          </span>
+                          <span className={`text-xs font-black font-mono ${v.desgaste > 75 ? "text-red-500" : v.desgaste > 45 ? "text-yellow-500" : "text-emerald-500"}`}>{v.desgaste}%</span>
                         </div>
                         <div className="w-full bg-slate-950 h-1.5 rounded-full border border-slate-800 overflow-hidden">
-                          <div className={`h-full transition-all duration-500 ${v.desgaste > 75 ? "bg-red-600" : v.desgaste > 45 ? "bg-yellow-500" : "bg-emerald-500"}`}
-                            style={{ width: `${v.desgaste}%` }} />
+                          <div className={`h-full transition-all duration-500 ${v.desgaste > 75 ? "bg-red-600" : v.desgaste > 45 ? "bg-yellow-500" : "bg-emerald-500"}`} style={{ width: `${v.desgaste}%` }} />
                         </div>
                       </div>
                     </td>
-
                     <td className="p-4">
                       <div className="flex flex-col gap-1.5 w-32">
                         <div className="flex justify-between items-end">
@@ -322,17 +286,39 @@ export default function DashboardSesion() {
                             <Fuel size={10} className="text-slate-500" />
                             <span className="text-[9px] font-mono text-slate-500 uppercase">Level</span>
                           </div>
-                          <span className={`text-xs font-black font-mono ${v.combustible < 5 ? "text-orange-500" : "text-sky-400"}`}>
-                            {v.combustible} L
-                          </span>
+                          <span className={`text-xs font-black font-mono ${v.combustible < 5 ? "text-orange-500" : "text-sky-400"}`}>{v.combustible} L</span>
                         </div>
                         <div className="w-full bg-slate-950 h-1.5 rounded-full border border-slate-800 overflow-hidden">
-                          <div className={`h-full transition-all duration-700 ${v.combustible < 5 ? "bg-orange-600" : "bg-sky-500"}`}
-                            style={{ width: `${(v.combustible / 110) * 100}%` }} />
+                          <div className={`h-full transition-all duration-700 ${v.combustible < 5 ? "bg-orange-600" : "bg-sky-500"}`} style={{ width: `${(v.combustible / 110) * 100}%` }} />
                         </div>
                       </div>
                     </td>
-
+                    {/* Nueva columna ERS Deployed */}
+                    {/* Nueva columna ERS Deployed */}
+<td className="p-4 text-center">
+  <div className="flex flex-col gap-1.5 w-32">
+    <div className="flex justify-between items-end">
+      <div className="flex items-center gap-1">
+        <Zap size={10} className="text-yellow-500" />
+        <span className="text-[9px] font-mono text-slate-500 uppercase">Deployed</span>
+      </div>
+      {/* Muestra el valor real en kJ */}
+      <span className="text-xs font-black font-mono text-yellow-500">
+        {v.ers_deployed} <span className="text-[8px] opacity-70">kJ</span>
+      </span>
+    </div>
+    <div className="w-full bg-slate-950 h-1.5 rounded-full border border-slate-800 overflow-hidden">
+      {/* CÁLCULO COHERENTE: 
+          Dividimos el valor actual por 4000 (el máximo) y multiplicamos por 100 
+          para obtener el porcentaje real de la barra.
+      */}
+      <div 
+        className="h-full bg-yellow-500 transition-all duration-500 shadow-[0_0_8px_rgba(234,179,8,0.3)]" 
+        style={{ width: `${Math.min((v.ers_deployed / 4000) * 100, 100)}%` }} 
+      />
+    </div>
+  </div>
+</td>
                     <td className="p-4 text-center font-mono text-blue-400 uppercase">{v.top_speed} km/h</td>
                   </tr>
                 );
