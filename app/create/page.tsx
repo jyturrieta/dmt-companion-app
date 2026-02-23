@@ -113,7 +113,7 @@ export default function NuevaSesion() {
 
         <div className="bg-slate-800/30 p-4 border-t border-slate-800 flex justify-center">
           <p className="text-[9px] font-mono text-slate-600 uppercase tracking-tighter">
-            System Ready // DMT Telemetry Protocol v2.4
+            Tip: Be specific with the event name to easily identify sessions later.
           </p>
         </div>
       </div>
