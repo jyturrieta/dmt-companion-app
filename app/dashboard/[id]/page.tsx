@@ -80,7 +80,7 @@ export default function DashboardSesion() {
   const chartData = Array.from(
     new Set(vueltas.map((v) => v.numero_vuelta)),
   ).map((numVuelta) => {
-    const dataPunto: any = { name: `V${numVuelta}` };
+    const dataPunto: any = { name: `L${numVuelta}` };
     vueltas
       .filter((v) => v.numero_vuelta === numVuelta)
       .forEach((v) => {
@@ -159,7 +159,7 @@ export default function DashboardSesion() {
       {/* BOTONERA DE FILTROS */}
       <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 mb-8">
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">
-          Filtrar Pilotos
+          Filter by Driver
         </p>
         <div className="flex flex-wrap gap-2">
           {pilotosUnicos.map((piloto, i) => (
@@ -236,19 +236,19 @@ export default function DashboardSesion() {
 
       {/* TABLA DE DETALLES (Al final) */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Detalle por Vuelta</h2>
+        <h2 className="text-xl font-bold mb-4">Detailed Lap Data</h2>
         <table className="w-full text-left bg-slate-800 rounded-xl overflow-hidden">
           <thead>
             <tr className="bg-slate-700 text-slate-300">
-              <th className="p-3">Piloto</th>
-              <th className="p-3">Vuelta</th>
-              <th className="p-3">Neumático</th>
+              <th className="p-3">Driver</th>
+              <th className="p-3">Lap</th>
+              <th className="p-3">Tyre</th>
               <th className="p-3">s1</th>
               <th className="p-3">s2</th>
               <th className="p-3">s3</th>
               <th className="p-3">Laptime</th>
-              <th className="p-3">Desgaste</th>
-              <th className="p-3">Combustible</th>
+              <th className="p-3">Wear</th>
+              <th className="p-3">Fuel</th>
               <th className="p-3">ERS Deploy</th>
               <th className="p-3">Top Speed</th>
             </tr>

@@ -7,7 +7,7 @@ import { Trash2, Search, Trophy, Calendar, ChevronRight, Activity, MapPin } from
 // Función auxiliar para formatear la fecha
 const formatDate = (dateString: string) => {
   if (!dateString) return 'Fecha no disponible';
-  return new Date(dateString).toLocaleDateString('es-ES', {
+  return new Date(dateString).toLocaleDateString('en-UK', {
     day: '2-digit',
     month: 'long',
     year: 'numeric'
@@ -37,6 +37,9 @@ export default function Home() {
           name,
           location,
           country
+        ),
+        tipo_sesion (
+          nombre
         )
       `)
       .order('fecha', { ascending: false })
@@ -102,7 +105,7 @@ export default function Home() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-red-500 transition-colors w-4 h-4" />
               <input 
   type="text"
-  placeholder="Buscar por circuito o ciudad..." // <-- Placeholder más descriptivo
+  placeholder="Search..." // <-- Placeholder más descriptivo
   className="w-full sm:w-64 bg-slate-800/50 border border-slate-700 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-red-600 transition-all placeholder:text-slate-600"
   value={busqueda}
   onChange={(e) => setBusqueda(e.target.value)}
@@ -113,7 +116,7 @@ export default function Home() {
               href="/create" 
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-900/20 flex items-center justify-center gap-2 active:scale-95"
             >
-              NUEVA SESIÓN
+              UPLOAD SESSION
             </Link>
           </div>
         </div>
@@ -143,7 +146,7 @@ export default function Home() {
                       <div className="flex items-center gap-3 mb-6">
                         <Activity size={16} className="text-red-600" />
                         <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                          {sesion.tipo_sesion || 'Sesión Técnica'}
+                          {sesion.tipo_sesion?.nombre || 'Sesión Técnica'}
                         </span>
                       </div>
 
@@ -169,7 +172,7 @@ export default function Home() {
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-2">
                         <Trophy size={16} className="text-yellow-500" />
-                        <span className="text-xs font-bold text-slate-300 uppercase">Analizar Telemetría</span>
+                        <span className="text-xs font-bold text-slate-300 uppercase">Analyze Telemetry</span>
                       </div>
                       <div className="p-2 bg-red-600/10 rounded-full text-red-500 group-hover:bg-red-600 group-hover:text-white transition-all">
                         <ChevronRight size={20} />
