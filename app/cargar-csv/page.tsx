@@ -70,8 +70,8 @@ export default function CargarCSV() {
         )}
 
         {role === 'ingeniero' && (
-        
-        {/* Encabezado de Proceso */}
+          <>
+            {/* Encabezado de Proceso */}
         <div className="flex items-center gap-4 mb-8">
           <div className="flex-1 h-[1px] bg-slate-800"></div>
           <div className="text-center">
@@ -149,6 +149,7 @@ export default function CargarCSV() {
             )}
           </div>
         </div>
+        </>
         )}
 
         {/* Footer Info */}
