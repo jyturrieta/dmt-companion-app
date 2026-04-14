@@ -26,14 +26,18 @@ export default function LoginPage() {
       return
     }
 
-    // 2. Guardamos la "sesión" manualmente en una Cookie para que el Middleware la vea
-    // Usamos una cookie simple para este nivel de acceso
+    // 2. Guardamos la "sesión" y una versión normalizada del rol en Cookies para que el Middleware las vea
+    // La base de datos puede usar valores en mayúsculas (ej. 'ADMIN'/'PILOTO'). Normalizamos a 'ingeniero'/'piloto' para la UI.
+    const rawRole = (usuario.rol || '').toString()
+    const normalizedRole = rawRole.toUpperCase() === 'ADMIN' ? 'ingeniero' : rawRole.toUpperCase() === 'PILOTO' ? 'piloto' : rawRole.toLowerCase()
+
     document.cookie = `user_session=${usuario.username}; path=/; max-age=86400; SameSite=Lax`;
-    
-    // Opcional: Guardar rol o nombre en localStorage para la UI
+    document.cookie = `user_role=${normalizedRole}; path=/; max-age=86400; SameSite=Lax`;
+
+    // Guardar datos en localStorage para la UI (con rol normalizado)
     localStorage.setItem('user_data', JSON.stringify({
       nombre: usuario.nombre_completo,
-      rol: usuario.rol
+      rol: normalizedRole
     }));
 
     router.push('/')

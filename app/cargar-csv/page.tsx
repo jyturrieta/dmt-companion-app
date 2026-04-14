@@ -2,7 +2,7 @@
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { parseTelemetryCSV } from '@/services/csvProcessor'
 import { supabase } from '@/lib/supabase'
 
@@ -12,11 +12,34 @@ export default function CargarCSV() {
   const [loading, setLoading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const router = useRouter()
+  const [role, setRole] = useState<string | null>(null)
+
+  // Leer rol desde localStorage o cookie para la UI
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('user_data')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        setRole(parsed.rol || null)
+        return
+      }
+      // fallback a cookie
+      const match = document.cookie.match(/(^|;)\s*user_role=([^;]+)/)
+      if (match) setRole(decodeURIComponent(match[2]))
+    } catch (e) {
+      setRole(null)
+    }
+  }, [])
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | any) => {
     // Soporta tanto el input tradicional como el drag & drop
     const file = e.target.files?.[0] || e.dataTransfer?.files?.[0]
     if (!file || !sesionId) return
+    // Seguridad extra: asegurar que sólo ingenieros puedan subir
+    if (role !== 'ingeniero') {
+      alert('Solo usuarios con rol ingeniero pueden subir archivos CSV.')
+      return
+    }
 
     setLoading(true)
     try {
@@ -36,6 +59,17 @@ export default function CargarCSV() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">
+
+        {/* Si el usuario no es ingeniero, mostrar bloqueo de acceso a upload */}
+        {role !== 'ingeniero' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+            <h2 className="text-xl font-bold text-white uppercase mb-4">Acceso denegado</h2>
+            <p className="text-slate-400 text-sm mb-6">Solo los usuarios con rol <strong>ingeniero</strong> pueden subir archivos CSV.</p>
+            <a href="/" className="inline-block bg-red-600 hover:bg-red-700 text-white font-black py-3 px-6 rounded-xl">Volver al Dashboard</a>
+          </div>
+        )}
+
+        {role === 'ingeniero' && (
         
         {/* Encabezado de Proceso */}
         <div className="flex items-center gap-4 mb-8">
@@ -115,6 +149,7 @@ export default function CargarCSV() {
             )}
           </div>
         </div>
+        )}
 
         {/* Footer Info */}
         <div className="mt-8 flex justify-between items-center px-4">

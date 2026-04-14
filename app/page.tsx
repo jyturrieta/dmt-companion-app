@@ -17,9 +17,23 @@ export default function Home() {
   const [sesiones, setSesiones] = useState<any[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
+  const [role, setRole] = useState<string | null>(null)
 
   useEffect(() => {
     fetchSesiones()
+    // Leer rol normalizado desde localStorage o cookie para controlar UI
+    try {
+      const stored = localStorage.getItem('user_data')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        setRole(parsed.rol || null)
+      } else {
+        const match = document.cookie.match(/(^|;)\s*user_role=([^;]+)/)
+        if (match) setRole(decodeURIComponent(match[2]))
+      }
+    } catch (e) {
+      setRole(null)
+    }
   }, [])
 
   const fetchSesiones = async () => {
@@ -52,6 +66,12 @@ export default function Home() {
 
   const borrarSesion = async (e: React.MouseEvent, id: string) => {
     e.preventDefault()
+    // Seguridad cliente: sólo ingenieros pueden borrar
+    if (role !== 'ingeniero') {
+      alert('No tienes permisos para eliminar sesiones.')
+      return
+    }
+
     if (confirm('⚠️ WARNING: All telemetry data for this session will be permanently erased. Proceed?')) {
       try {
         const { error } = await supabase.from('sesiones').delete().eq('id', id)
@@ -91,7 +111,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
             <div className="relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-red-500 transition-colors w-4 h-4" />
               <input 
@@ -102,14 +122,16 @@ export default function Home() {
                 onChange={(e) => setBusqueda(e.target.value)}
               />
             </div>
-            
-            <Link 
-              href="/create" 
-              className="bg-white hover:bg-red-600 text-black hover:text-white px-8 py-4 rounded-lg font-black transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95 uppercase text-xs tracking-widest"
-            >
-              <Plus size={16} strokeWidth={3} />
-              Inject Session
-            </Link>
+            {/* Mostrar el botón de crear sólo si el rol es ingeniero */}
+            {role === 'ingeniero' && (
+              <Link 
+                href="/create" 
+                className="bg-white hover:bg-red-600 text-black hover:text-white px-8 py-4 rounded-lg font-black transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95 uppercase text-xs tracking-widest"
+              >
+                <Plus size={16} strokeWidth={3} />
+                Inject Session
+              </Link>
+            )}
           </div>
         </div>
 
@@ -139,13 +161,15 @@ export default function Home() {
                             {sesion.tipo_sesion?.nombre || 'Technical'}
                           </span>
                         </div>
-                        <button 
-                          onClick={(e) => borrarSesion(e, sesion.id)}
-                          className="p-2 text-slate-700 hover:text-red-500 transition-colors z-20"
-                        >
-                          <Trash2 size={14} className="group-hover:hidden" />
-                          <Trash2 size={16} className="hidden group-hover:block" />
-                        </button>
+                        {role === 'ingeniero' && (
+                          <button 
+                            onClick={(e) => borrarSesion(e, sesion.id)}
+                            className="p-2 text-slate-700 hover:text-red-500 transition-colors z-20"
+                          >
+                            <Trash2 size={14} className="group-hover:hidden" />
+                            <Trash2 size={16} className="hidden group-hover:block" />
+                          </button>
+                        )}
                       </div>
 
                       <h3 className="text-2xl font-black italic uppercase text-white mb-2 leading-none group-hover:text-red-500 transition-colors">
