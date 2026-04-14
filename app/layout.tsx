@@ -71,7 +71,7 @@ export default function RootLayout({
 
           {/* Versión / Status */}
           <div className="text-[10px] text-slate-700 font-mono uppercase tracking-[0.2em]">
-            v1.0.2 // DMT COMPANION APP
+            v1.1.8 // DMT COMPANION APP
           </div>
         </div>
       </footer>

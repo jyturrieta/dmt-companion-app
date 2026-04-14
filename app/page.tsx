@@ -1,5 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Trash2, Search, Trophy, Calendar, ChevronRight, Activity, MapPin, Plus, Hash } from 'lucide-react'
@@ -18,6 +20,8 @@ export default function Home() {
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [role, setRole] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     fetchSesiones()
@@ -27,6 +31,7 @@ export default function Home() {
       if (stored) {
         const parsed = JSON.parse(stored)
         setRole(parsed.rol || null)
+        setUserName(parsed.nombre || parsed.nombre_completo || null)
       } else {
         const match = document.cookie.match(/(^|;)\s*user_role=([^;]+)/)
         if (match) setRole(decodeURIComponent(match[2]))
@@ -35,6 +40,18 @@ export default function Home() {
       setRole(null)
     }
   }, [])
+
+  const handleLogout = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    // Borrar cookies de sesión/rol
+    document.cookie = 'user_session=; path=/; max-age=0; SameSite=Lax'
+    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax'
+    // Borrar localStorage
+    try { localStorage.removeItem('user_data') } catch (err) {}
+    // Redirigir a login
+    router.push('/login')
+    router.refresh()
+  }
 
   const fetchSesiones = async () => {
     setLoading(true)
@@ -109,9 +126,18 @@ export default function Home() {
             <p className="text-slate-500 font-medium tracking-tight max-w-md uppercase text-xs">
               Advanced race data processing for professional simulation and analysis.
             </p>
+            {/* Botón prominente para crear sesión (mejor UX) */}
+            {role === 'ingeniero' && (
+              <div className="mt-4">
+                <Link href="/create" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 font-black shadow-lg text-sm">
+                  <Plus size={16} />
+                  Create Session
+                </Link>
+              </div>
+            )}
           </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center">
             <div className="relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-red-500 transition-colors w-4 h-4" />
               <input 
@@ -122,16 +148,24 @@ export default function Home() {
                 onChange={(e) => setBusqueda(e.target.value)}
               />
             </div>
-            {/* Mostrar el botón de crear sólo si el rol es ingeniero */}
-            {role === 'ingeniero' && (
-              <Link 
-                href="/create" 
-                className="bg-white hover:bg-red-600 text-black hover:text-white px-8 py-4 rounded-lg font-black transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95 uppercase text-xs tracking-widest"
-              >
-                <Plus size={16} strokeWidth={3} />
-                Inject Session
-              </Link>
-            )}
+            <div className="flex items-center gap-4">
+              {/* Mostrar el badge de rol si existe */}
+              {role && (
+                <div className={`h-8 inline-flex items-center justify-center gap-2 px-3 rounded-full text-sm font-bold uppercase tracking-widest ${role === 'ingeniero' ? 'bg-red-700 text-white border border-red-600' : role === 'piloto' ? 'bg-blue-600 text-white border border-blue-500' : 'bg-slate-800 text-slate-300 border border-slate-700'}`}>
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: role === 'ingeniero' ? '#b91c1c' : role === 'piloto' ? '#2563eb' : '#334155' }} />
+                  <span className="leading-none max-w-[180px] text-center truncate">
+                    {userName ? userName : role === 'ingeniero' ? 'ENGINEER' : role === 'piloto' ? 'DRIVER' : role?.toUpperCase()}
+                  </span>
+                </div>
+              )}
+
+              {/* Botón de logout - compacto con icono */}
+              <button onClick={handleLogout} aria-label="Logout" title="Logout" className="p-2 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:bg-red-600 hover:text-white transition-colors">
+                <LogOut size={16} />
+              </button>
+
+              {/* El botón de crear fue movido junto al título para mejor UX */}
+            </div>
           </div>
         </div>
 
