@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -13,35 +12,47 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
 
-    // 1. Buscamos al usuario por su username en tu tabla
-    const { data: usuario, error: dbError } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('username', username)
-      .eq('password', password) // Nota: En producción esto debería ser comparando hashes
-      .single()
+    // 1. Llamamos al endpoint server que valida la contraseña (soporta hashes)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        setError('Usuario o contraseña incorrectos')
+        return
+      }
 
-    if (dbError || !usuario) {
-      setError("Usuario o contraseña incorrectos")
+      const usuario = json.user
+      const needsPasswordChange = !!json.needsPasswordChange
+
+      // Guardamos la "sesión" y una versión normalizada del rol en Cookies para que el Middleware las vea
+      const rawRole = (usuario.rol || '').toString()
+      const normalizedRole = rawRole.toUpperCase() === 'ADMIN' ? 'ingeniero' : rawRole.toUpperCase() === 'PILOTO' ? 'piloto' : rawRole.toLowerCase()
+
+      document.cookie = `user_session=${usuario.username}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `user_role=${normalizedRole}; path=/; max-age=86400; SameSite=Lax`;
+
+      // Guardar datos en localStorage para la UI (con rol normalizado)
+      localStorage.setItem('user_data', JSON.stringify({
+        nombre: usuario.nombre_completo,
+        rol: normalizedRole
+      }));
+
+      if (needsPasswordChange) {
+        router.push('/change-password')
+        router.refresh()
+        return
+      }
+
+      router.push('/')
+      router.refresh()
+    } catch (err) {
+      setError('Error de conexión')
       return
     }
-
-    // 2. Guardamos la "sesión" y una versión normalizada del rol en Cookies para que el Middleware las vea
-    // La base de datos puede usar valores en mayúsculas (ej. 'ADMIN'/'PILOTO'). Normalizamos a 'ingeniero'/'piloto' para la UI.
-    const rawRole = (usuario.rol || '').toString()
-    const normalizedRole = rawRole.toUpperCase() === 'ADMIN' ? 'ingeniero' : rawRole.toUpperCase() === 'PILOTO' ? 'piloto' : rawRole.toLowerCase()
-
-    document.cookie = `user_session=${usuario.username}; path=/; max-age=86400; SameSite=Lax`;
-    document.cookie = `user_role=${normalizedRole}; path=/; max-age=86400; SameSite=Lax`;
-
-    // Guardar datos en localStorage para la UI (con rol normalizado)
-    localStorage.setItem('user_data', JSON.stringify({
-      nombre: usuario.nombre_completo,
-      rol: normalizedRole
-    }));
-
-    router.push('/')
-    router.refresh() // Forzar que el middleware se entere
   }
 
   return (
