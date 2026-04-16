@@ -128,10 +128,51 @@ export default function DashboardSesion() {
     });
   }, [vueltas]);
 
-  if (loading) return <div className="p-20 text-center font-mono text-slate-500 uppercase tracking-widest">Initialising Telemetry...</div>;
+  // --- Tire wear comparison state and derived data ---
+  const [driverA, setDriverA] = useState<string | null>(null);
+  const [driverB, setDriverB] = useState<string | null>(null);
+
+  const wearChartData = useMemo(() => {
+    if (!driverA && !driverB) return [];
+    const lapsNumbers = Array.from(new Set(vueltas.map(v => v.numero_vuelta))).sort((a,b)=>a-b);
+    return lapsNumbers.map(num => {
+      const point: any = { lap: num, name: `L${num}` };
+      const rowA = vueltas.find(v => v.numero_vuelta === num && v.piloto_nombre === driverA);
+      const rowB = vueltas.find(v => v.numero_vuelta === num && v.piloto_nombre === driverB);
+      point.a_wear = rowA ? rowA.desgaste : null;
+      point.a_tire = rowA ? rowA.neumatico : null;
+      point.b_wear = rowB ? rowB.desgaste : null;
+      point.b_tire = rowB ? rowB.neumatico : null;
+      return point;
+    });
+  }, [vueltas, driverA, driverB]);
+
+  // Custom dot to display tyre type color with an F1-like visual
+  const TyreDot = (props: any) => {
+    const { cx, cy, payload, dataKey } = props;
+    if (payload && payload[dataKey] == null) return null;
+    // determine tyre code field (a_tire or b_tire)
+    const tyreField = dataKey === 'a_wear' ? 'a_tire' : 'b_tire';
+    const tyre = payload[tyreField];
+    const col = tyre ? (tireConfig[tyre]?.color || '#888') : '#444';
+
+    // F1-style point: outer rubber ring + painted compound center
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={8} fill="#071226" stroke="#000" strokeWidth={1.5} />
+        <circle cx={cx} cy={cy} r={5.2} fill={col} stroke="#0b1220" strokeWidth={0.8} />
+        <circle cx={cx} cy={cy} r={1.5} fill="#01030a" />
+        {tyre && (
+          <text x={cx} y={cy - 12} textAnchor="middle" fontSize={10} fill="#e6eef8" fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, monospace">{tyre}</text>
+        )}
+      </g>
+    );
+  };
+
+  if (loading) return <div className="p-8 text-center font-mono text-slate-500 uppercase tracking-widest">Initialising Telemetry...</div>;
 
   return (
-    <div className="p-4 md:p-8 bg-slate-950 min-h-screen text-slate-100 italic-none">
+    <div className="p-4 md:p-8 bg-slate-950 text-slate-100 italic-none">
       
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
@@ -171,9 +212,9 @@ export default function DashboardSesion() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 mb-8">
         {/* SIDEBAR FILTROS */}
-        <div className="lg:col-span-1 bg-slate-900/50 border border-slate-800 p-5 rounded-2xl">
+        <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 p-5 rounded-2xl">
           <div className="flex justify-between items-center mb-4">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Drivers Selection</p>
           </div>
@@ -202,23 +243,64 @@ export default function DashboardSesion() {
           </div>
         </div>
 
-        {/* GRÁFICO */}
-        <div className="lg:col-span-3 bg-slate-900 border border-slate-800 rounded-2xl p-6 h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="name" stroke="#475569" fontSize={10} axisLine={false} />
-              <YAxis hide domain={['auto', 'auto']} />
-              <Tooltip contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", borderRadius: "12px" }} formatter={(val: any) => [formatLaptime(val), "Time"]} />
-              <Legend verticalAlign="top" height={36} iconType="circle" />
-              {stats && <ReferenceLine y={stats.bestLap} stroke="#a855f7" strokeDasharray="5 5" />}
-              {pilotosData.filter(p => pilotosVisibles.includes(p.nombre)).map((piloto) => (
-                <Line key={piloto.nombre} type="monotone" dataKey={piloto.nombre} stroke={piloto.color} strokeWidth={3} dot={{ r: 4, fill: piloto.color }} activeDot={{ r: 6 }} />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+        {/* MAIN: container (stacked main chart + tyre wear) */}
+        <div className="lg:col-span-4">
+          <div className="flex flex-col gap-6">
+            {/* MAIN CHART */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-[340px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis dataKey="name" stroke="#475569" fontSize={10} axisLine={false} />
+                  <YAxis hide domain={["auto", "auto"]} />
+                  <Tooltip contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", borderRadius: "12px" }} formatter={(val: any) => [formatLaptime(val), "Time"]} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" />
+                  {stats && <ReferenceLine y={stats.bestLap} stroke="#a855f7" strokeDasharray="5 5" />}
+                  {pilotosData.filter(p => pilotosVisibles.includes(p.nombre)).map((piloto) => (
+                    <Line key={piloto.nombre} type="monotone" dataKey={piloto.nombre} stroke={piloto.color} strokeWidth={3} dot={{ r: 4, fill: piloto.color }} activeDot={{ r: 6 }} />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* TIRE WEAR: stacked under main chart, same width */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-black uppercase">Tyre Wear Comparison</h2>
+                <div className="flex items-center gap-3">
+                  <select value={driverA || ''} onChange={(e) => setDriverA(e.target.value || null)} className="bg-slate-800 text-slate-200 px-3 py-2 rounded-lg">
+                    <option value="">Select driver A</option>
+                    {pilotosData.map(p => <option key={p.nombre} value={p.nombre}>{p.nombre}</option>)}
+                  </select>
+                  <span className="text-slate-500">vs</span>
+                  <select value={driverB || ''} onChange={(e) => setDriverB(e.target.value || null)} className="bg-slate-800 text-slate-200 px-3 py-2 rounded-lg">
+                    <option value="">Select driver B</option>
+                    {pilotosData.map(p => <option key={p.nombre} value={p.nombre}>{p.nombre}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={wearChartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#0b1220" vertical={false} />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+                    <YAxis domain={[0, 100]} unit="%" stroke="#94a3b8" />
+                    <Tooltip contentStyle={{ backgroundColor: "#020617", border: "1px solid #0f172a" }} formatter={(val: any) => [`${val}%`, 'Wear']} />
+                    <Legend />
+                    {driverA && <Line name={driverA} type="monotone" dataKey="a_wear" stroke={pilotosData.find(p=>p.nombre===driverA)?.color || '#ef4444'} strokeWidth={3} dot={<TyreDot dataKey={'a_wear'} />} />}
+                    {driverB && <Line name={driverB} type="monotone" dataKey="b_wear" stroke={pilotosData.find(p=>p.nombre===driverB)?.color || '#3b82f6'} strokeWidth={3} dot={<TyreDot dataKey={'b_wear'} />} />}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <p className="text-[12px] text-slate-400 mt-3"><strong>Note:</strong> This is supplementary information — dots display tyre compound above each lap; dot color indicates the compound type.</p>
+            </div>
+          </div>
         </div>
       </div>
+
+      
 
       {/* TABLA DE DATOS */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
