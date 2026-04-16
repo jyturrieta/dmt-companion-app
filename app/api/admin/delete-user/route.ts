@@ -101,7 +101,6 @@ export async function POST(req: Request) {
       const cookieHeader = (req.headers && typeof req.headers.get === 'function') ? req.headers.get('cookie') : null
       ok = await verifyAdminFromCookieHeader(supabase, cookieHeader)
     }
-    if (!ok && adminUsername && adminPassword) ok = await verifyAdminByCreds(supabase, adminUsername, adminPassword)
     if (!ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { error } = await supabase.from('usuarios').delete().eq('username', username)
