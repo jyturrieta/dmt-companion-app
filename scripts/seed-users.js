@@ -22,7 +22,8 @@ async function seed() {
   // Usar los valores que la DB acepta (mayúsculas): ADMIN, PILOTO
   const usuariosRaw = [
     { username: 'ingeniero1', password: 'pass123', nombre_completo: 'Ingeniero Demo', rol: 'ADMIN' },
-    { username: 'piloto1', password: 'pass123', nombre_completo: 'Piloto Demo', rol: 'PILOTO' }
+    { username: 'piloto1', password: 'pass123', nombre_completo: 'Piloto Demo', rol: 'PILOTO' },
+    { username: 'admin', password: 'pass123', nombre_completo: 'Administrador', rol: 'ADMIN_GENERAL' }
   ]
 
   // Añadimos un sufijo marker '$mc' en la contraseña hasheada para indicar "must change"

@@ -35,8 +35,8 @@ export default function CargarCSV() {
     // Soporta tanto el input tradicional como el drag & drop
     const file = e.target.files?.[0] || e.dataTransfer?.files?.[0]
     if (!file || !sesionId) return
-    // Seguridad extra: asegurar que sólo ingenieros puedan subir
-    if (role !== 'ingeniero') {
+    // Seguridad extra: asegurar que sólo ingenieros o admin_general puedan subir
+    if (role !== 'ingeniero' && role !== 'admin_general') {
       alert('Solo usuarios con rol ingeniero pueden subir archivos CSV.')
       return
     }
@@ -60,8 +60,8 @@ export default function CargarCSV() {
     <div className="min-h-[80vh] flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">
 
-        {/* Si el usuario no es ingeniero, mostrar bloqueo de acceso a upload */}
-        {role !== 'ingeniero' && (
+        {/* Si el usuario no es ingeniero ni admin_general, mostrar bloqueo de acceso a upload */}
+        {role !== 'ingeniero' && role !== 'admin_general' && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
             <h2 className="text-xl font-bold text-white uppercase mb-4">Acceso denegado</h2>
             <p className="text-slate-400 text-sm mb-6">Solo los usuarios con rol <strong>ingeniero</strong> pueden subir archivos CSV.</p>
@@ -69,7 +69,7 @@ export default function CargarCSV() {
           </div>
         )}
 
-        {role === 'ingeniero' && (
+        {(role === 'ingeniero' || role === 'admin_general') && (
           <>
             {/* Encabezado de Proceso */}
         <div className="flex items-center gap-4 mb-8">

@@ -18,10 +18,16 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
-  // Restricciones por rol: Solo los ingenieros pueden crear sesiones o subir CSV
+  // Restricciones por rol: Solo los ingenieros o admin_general pueden crear sesiones o subir CSV
   const path = req.nextUrl.pathname
   const needsEngineer = path.startsWith('/cargar-csv') || path.startsWith('/create')
-  if (needsEngineer && role?.value !== 'ingeniero') {
+  if (needsEngineer && role?.value !== 'ingeniero' && role?.value !== 'admin_general') {
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
+  // Restricción para /admin: sólo admin_general puede acceder
+  const isAdminArea = path.startsWith('/admin')
+  if (isAdminArea && role?.value !== 'admin_general') {
     return NextResponse.redirect(new URL('/', req.url))
   }
 

@@ -83,8 +83,8 @@ export default function Home() {
 
   const borrarSesion = async (e: React.MouseEvent, id: string) => {
     e.preventDefault()
-    // Seguridad cliente: sólo ingenieros pueden borrar
-    if (role !== 'ingeniero') {
+    // Seguridad cliente: sólo ingenieros o admin_general pueden borrar
+    if (role !== 'ingeniero' && role !== 'admin_general') {
       alert('No tienes permisos para eliminar sesiones.')
       return
     }
@@ -127,11 +127,18 @@ export default function Home() {
               Advanced race data processing for professional simulation and analysis.
             </p>
             {/* Botón prominente para crear sesión (mejor UX) */}
-            {role === 'ingeniero' && (
+            {(role === 'ingeniero' || role === 'admin_general') && (
               <div className="mt-4">
                 <Link href="/create" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 font-black shadow-lg text-sm">
                   <Plus size={16} />
                   Create Session
+                </Link>
+              </div>
+            )}
+            {role === 'admin_general' && (
+              <div className="mt-3">
+                <Link href="/admin" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 font-bold text-sm">
+                  Admin Panel
                 </Link>
               </div>
             )}
@@ -195,7 +202,7 @@ export default function Home() {
                             {sesion.tipo_sesion?.nombre || 'Technical'}
                           </span>
                         </div>
-                        {role === 'ingeniero' && (
+                        {(role === 'ingeniero' || role === 'admin_general') && (
                           <button 
                             onClick={(e) => borrarSesion(e, sesion.id)}
                             className="p-2 text-slate-700 hover:text-red-500 transition-colors z-20"
